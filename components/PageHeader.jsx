@@ -72,7 +72,7 @@ export function PageHeader() {
           letterSpacing: "0.2px",
         }}
       >
-        Enter an 8-digit player number to view total session time
+        Enter an 10-digit player number to view total session time
       </p>
     </div>
   );

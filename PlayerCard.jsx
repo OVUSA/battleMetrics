@@ -18,7 +18,7 @@
 
 import { useState } from "react";
 import { formatTime }     from "../../utils/formatTime";
-import { SessionDrawer }  from "./SessionDrawer";
+import { SessionDrawer }  from "./components/SessionDrawer";
 
 /**
  * @param {{

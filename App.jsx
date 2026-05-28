@@ -4,21 +4,15 @@
  * The root component. Its ONLY job is to:
  *   1. Pull state and actions from the usePlayerSearch hook.
  *   2. Pass them down to the right components.
- *
- * There is NO business logic here — that lives in the hook.
- * There is NO styling here — that lives in the components.
- *
- * If this file is getting long or complex, it's a signal
- * that logic has leaked in and should move to the hook.
  * ---------------------------------------------------------
  */
 
 import "./styles/global.css";
 
 import { usePlayerSearch } from "./hooks/usePlayerSearch";
-import { PageHeader }      from "./components/PageHeader/PageHeader";
-import { SearchPanel }     from "./components/SearchPanel/SearchPanel";
-import { PlayerList }      from "./components/PlayerList/PlayerList";
+import { PageHeader }      from "./components/PageHeader";
+import { SearchPanel }     from "./components/SearchPanel";
+import { PlayerList }      from "./components/PlayerList";
 
 export default function App() {
   const {
