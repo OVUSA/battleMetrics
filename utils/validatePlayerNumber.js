@@ -18,7 +18,7 @@
 const PLAYER_NUMBER_REGEX = /^\d{8}$/;
 
 /**
- * Validates that :playerNumber is exactly 8 numeric digits.
+ * Validates that :playerNumber is exactly 10 numeric digits.
  *
  * @type {import('express').RequestHandler}
  */
@@ -27,7 +27,7 @@ export function validatePlayerNumberParam(req, res, next) {
 
   if (!PLAYER_NUMBER_REGEX.test(playerNumber)) {
     return res.status(400).json({
-      message: "Player number must be exactly 8 digits.",
+      message: "Player number must be exactly 10 digits.",
     });
   }
 

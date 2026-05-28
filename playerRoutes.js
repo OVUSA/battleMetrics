@@ -19,14 +19,20 @@
 
 import { Router }                  from "express";
 import { getPlayer }               from "../controllers/playerController.js";
-import { validatePlayerNumberParam } from "../middleware/validatePlayerNumber.js";
+import { validatePlayerNumberParam } from "../helpers/validatePlayerNumber.js";
 
 export const playerRouter = Router();
 
 // GET /api/v1/players/:playerNumber
 // Middleware runs first (validates the URL param), then the controller.
 playerRouter.get(
-  "/:playerNumber",
+  "/players/:playerNumber/relationships/sessions",
   validatePlayerNumberParam,
   getPlayer
 );
+
+
+//Started
+// 7 hours ago - 05/27/2026 8:27 PM
+// Ended
+// 7 hours ago - 05/27/2026 8:59 PM
