@@ -1,0 +1,33 @@
+:root {
+  --bg: #060b15;
+  --panel: #0b1423;
+  --border: #1d2f48;
+  --accent: #63b6ff;
+  --accent-dim: rgba(99, 182, 255, 0.12);
+  --text-primary: #e7efff;
+  --text-secondary: #9ab0cd;
+  --mono: Consolas, Menlo, Monaco, 'Courier New', monospace;
+
+  font-family: 'Trebuchet MS', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--text-primary);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(99, 182, 255, 0.16), transparent 32%),
+    radial-gradient(circle at 90% 80%, rgba(87, 145, 255, 0.14), transparent 36%),
+    linear-gradient(180deg, #040912 0%, #060b15 100%);
+}
+
+#root {
+  min-height: 100vh;
+}
