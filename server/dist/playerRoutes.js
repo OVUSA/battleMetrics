@@ -18,9 +18,15 @@ playerRouter.get('/sessions', async (req, res) => {
             totalMinutes: summary.totalMinutes,
             totalHours: summary.totalHours,
             totalSessions: summary.totalSessions,
+            totalTimePlayed: summary.totalTimePlayed,
+            totalTimePlayedHours: summary.totalTimePlayedHours,
             servers: summary.servers.map((server) => ({
                 ...server,
                 totalHours: Number((server.totalMinutes / 60).toFixed(2)),
+            })),
+            serverDetails: summary.serverDetails.map((server) => ({
+                ...server,
+                totalHours: Number((server.timePlayed / 60).toFixed(2)),
             })),
             fetchedAt: new Date().toISOString(),
         });
@@ -31,3 +37,20 @@ playerRouter.get('/sessions', async (req, res) => {
         res.status(status).json({ error: message });
     }
 });
+// request to get players session  on the server:
+// $ $ curl -n https://api.battlemetrics.com/players/$PLAYER_ID/servers/$SERVER_ID
+//Respond :
+// {
+//   "data": {
+//     "type": "playerServerInformation",
+//     "attributes": {
+//       "firstSeen": "2015-01-01T12:00:00Z",
+//       "lastSeen": "2015-01-01T12:00:00Z",
+//       "timePlayed": 42,
+//       "online": true
+//     }
+//   }
+// }
+//GET https://api.battlemetrics.com/sessions 
+//?filter[players]={player_id}&include=server get the list of all the servers player played on
+//cache the returned server_id mappings on your end.

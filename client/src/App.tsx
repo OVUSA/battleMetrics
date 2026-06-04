@@ -1,13 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { fetchPlayerSessions } from './api';
-import {
-  loadSavedPlayers,
-  loadSearchHistory,
-  saveSavedPlayers,
-  saveSearchHistory,
-} from './storage';
-import type { PlayerSessionApiResponse, SavedPlayerItem, SearchHistoryItem } from './types';
+import { loadSearchHistory, saveSearchHistory } from './storage';
+import type { PlayerSessionApiResponse, SearchHistoryItem } from './types';
 import './App.css';
 
 const MAX_HISTORY_ITEMS = 50;
@@ -44,15 +39,15 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
   const [latestResult, setLatestResult] = useState<SearchHistoryItem | null>(null);
   const [history, setHistory] = useState<SearchHistoryItem[]>(() => loadSearchHistory());
-  const [savedPlayers, setSavedPlayers] = useState<SavedPlayerItem[]>(() => loadSavedPlayers());
+  // const [savedPlayers, setSavedPlayers] = useState<SavedPlayerItem[]>(() => loadSavedPlayers());
 
-  const hasLatestResultSaved = useMemo(() => {
-    if (!latestResult) {
-      return false;
-    }
+  // const hasLatestResultSaved = useMemo(() => {
+  //   if (!latestResult) {
+  //     return false;
+  //   }
 
-    return savedPlayers.some((item) => item.playerId === latestResult.playerId);
-  }, [latestResult, savedPlayers]);
+  //   return savedPlayers.some((item) => item.playerId === latestResult.playerId);
+  // }, [latestResult, savedPlayers]);
 
   const executeSearch = async (): Promise<void> => {
     const input = query.trim();
@@ -86,38 +81,38 @@ function App() {
     }
   };
 
-  const saveLatestPlayer = (): void => {
-    if (!latestResult) {
-      setErrorMessage('Search for a player first, then use the plus button to save.');
-      return;
-    }
+  // const saveLatestPlayer = (): void => {
+  //   if (!latestResult) {
+  //     setErrorMessage('Search for a player first, then use the plus button to save.');
+  //     return;
+  //   }
 
-    setSavedPlayers((previous) => {
-      if (previous.some((item) => item.playerId === latestResult.playerId)) {
-        return previous;
-      }
+  //   setSavedPlayers((previous) => {
+  //     if (previous.some((item) => item.playerId === latestResult.playerId)) {
+  //       return previous;
+  //     }
 
-      const nextSaved = [
-        {
-          playerId: latestResult.playerId,
-          playerName: latestResult.playerName,
-          savedAt: new Date().toISOString(),
-        },
-        ...previous,
-      ];
+  //     const nextSaved = [
+  //       {
+  //         playerId: latestResult.playerId,
+  //         playerName: latestResult.playerName,
+  //         savedAt: new Date().toISOString(),
+  //       },
+  //       ...previous,
+  //     ];
 
-      saveSavedPlayers(nextSaved);
-      return nextSaved;
-    });
-  };
+  //     saveSavedPlayers(nextSaved);
+  //     return nextSaved;
+  //   });
+  // };
 
-  const removeSavedPlayer = (playerId: string): void => {
-    setSavedPlayers((previous) => {
-      const nextSaved = previous.filter((item) => item.playerId !== playerId);
-      saveSavedPlayers(nextSaved);
-      return nextSaved;
-    });
-  };
+  // const removeSavedPlayer = (playerId: string): void => {
+  //   setSavedPlayers((previous) => {
+  //     const nextSaved = previous.filter((item) => item.playerId !== playerId);
+  //     saveSavedPlayers(nextSaved);
+  //     return nextSaved;
+  //   });
+  // };
 
   return (
     <main className="app-shell">

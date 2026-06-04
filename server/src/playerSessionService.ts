@@ -1,3 +1,6 @@
+// import fs from 'node:fs/promises';
+// import path from 'node:path';
+// import { fileURLToPath } from 'node:url';
 import { battleMetricsGet } from './battleMetricsClient.js';
 import {
   type BattleMetricsApiListResponse,
@@ -11,6 +14,24 @@ import {
 const MAX_SESSION_PAGES = 20;
 const SESSION_PAGE_SIZE = 100;
 const ALL_DIGITS_REGEX = /^\d+$/;
+// const CACHE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../cache');
+
+// const ensureCacheDir = async (): Promise<void> => {
+//   await fs.mkdir(CACHE_DIR, { recursive: true });
+// };
+
+// const sanitizeFileName = (name: string): string =>
+//   name
+//     .replace(/[<>:"/\\|?*]/g, '_')
+//     .replace(/\s+/g, '_')
+//     .replace(/[^a-zA-Z0-9_\-.]/g, '_')
+//     .slice(0, 200);
+
+// const saveRawResponse = async (fileName: string, payload: unknown): Promise<void> => {
+//   await ensureCacheDir();
+//   const filePath = path.join(CACHE_DIR, sanitizeFileName(fileName));
+//   await fs.writeFile(filePath, JSON.stringify(payload, null, 2), 'utf8');
+// };
 
 const getPlayerName = (player: BattleMetricsEntity): string => {
   const candidate = player.attributes?.name;
@@ -135,6 +156,11 @@ const fetchPlayerSessions = async (playerId: string): Promise<PlayerSessionsResu
         collected.push(...response.data);
         mergeServerNames(serverNameMap, response.included);
 
+        // await saveRawResponse(
+        //   `player-${playerId}-sessions-${pageCount + 1}-${nextUrl}.json`,
+        //   response,
+        // );
+
         nextUrl = response.links?.next ?? null;
         pageCount += 1;
       }
@@ -222,6 +248,11 @@ const fetchPlayerServerInfo = async (
     const response = await battleMetricsGet<BattleMetricsApiSingleResponse<BattleMetricsEntity>>(
       `/players/${encodeURIComponent(playerId)}/servers/${encodeURIComponent(serverId)}`,
     );
+
+    // await saveRawResponse(
+    //   `player-${playerId}-server-${serverId}.json`,
+    //   response,
+    // );
 
     const data = response.data;
     const attributes = data.attributes ?? {};
