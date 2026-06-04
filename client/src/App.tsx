@@ -152,7 +152,7 @@ function App() {
             {isLoading ? 'Searching...' : 'Search'}
           </button>
 
-          <button
+        {/* <button
             type="button"
             className="plus-btn"
             onClick={saveLatestPlayer}
@@ -161,7 +161,7 @@ function App() {
             title={hasLatestResultSaved ? 'Player is already saved' : 'Save latest searched player'}
           >
             +
-          </button>
+          </button>  */}
         </div>
 
         {errorMessage ? <p className="feedback error">{errorMessage}</p> : null}
@@ -187,7 +187,7 @@ function App() {
               <thead>
                 <tr>
                   <th>Player</th>
-                  <th>Query</th>
+                  <th>Player ID</th>
                   <th>Total Hours</th>
                   <th>Sessions</th>
                   <th>Top Server</th>
@@ -220,7 +220,7 @@ function App() {
           <span>{savedPlayers.length} saved</span>
         </div>
 
-        {savedPlayers.length === 0 ? (
+        {/* {savedPlayers.length === 0 ? (
           <p className="empty-state">Use the plus sign to save searched players.</p>
         ) : (
           <div className="table-wrap">
@@ -253,7 +253,7 @@ function App() {
               </tbody>
             </table>
           </div>
-        )}
+        )} */}
       </section>
     </main>
   );
