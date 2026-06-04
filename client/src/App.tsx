@@ -214,13 +214,13 @@ function App() {
         )}
       </section>
 
-      <section className="panel table-panel">
+      {/* <section className="panel table-panel">
         <div className="panel-header">
           <h2>Saved Players</h2>
           <span>{savedPlayers.length} saved</span>
         </div>
 
-        {/* {savedPlayers.length === 0 ? (
+        {savedPlayers.length === 0 ? (
           <p className="empty-state">Use the plus sign to save searched players.</p>
         ) : (
           <div className="table-wrap">
@@ -253,8 +253,8 @@ function App() {
               </tbody>
             </table>
           </div>
-        )} */}
-      </section>
+        )}
+      </section> */}
     </main>
   );
 }
