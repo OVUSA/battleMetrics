@@ -24,6 +24,15 @@ export interface SessionSummaryByServer {
   sessionCount: number;
 }
 
+export interface PlayerServerInfo {
+  serverId: string;
+  serverName: string;
+  firstSeen?: string;
+  lastSeen?: string;
+  timePlayed: number;
+  online?: boolean;
+}
+
 export interface PlayerSessionSummary {
   playerId: string;
   playerName: string;
@@ -31,4 +40,7 @@ export interface PlayerSessionSummary {
   totalHours: number;
   totalSessions: number;
   servers: SessionSummaryByServer[];
+  totalTimePlayed: number;
+  totalTimePlayedHours: number;
+  serverDetails: PlayerServerInfo[];
 }

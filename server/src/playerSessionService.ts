@@ -3,6 +3,7 @@ import {
   type BattleMetricsApiListResponse,
   type BattleMetricsApiSingleResponse,
   type BattleMetricsEntity,
+  type PlayerServerInfo,
   type PlayerSessionSummary,
   type SessionSummaryByServer,
 } from './types.js';
@@ -100,10 +101,24 @@ const getSessionsPage = async (url: string): Promise<BattleMetricsApiListRespons
   return battleMetricsGet<BattleMetricsApiListResponse<BattleMetricsEntity>>(url);
 };
 
-const fetchPlayerSessions = async (playerId: string): Promise<BattleMetricsEntity[]> => {
+type PlayerSessionsResult = {
+  sessions: BattleMetricsEntity[];
+  serverNameMap: Map<string, string>;
+};
+
+const mergeServerNames = (target: Map<string, string>, included: unknown[] | undefined): void => {
+  for (const [id, name] of extractServerNameMap(included)) {
+    if (!target.has(id)) {
+      target.set(id, name);
+    }
+  }
+};
+
+const fetchPlayerSessions = async (playerId: string): Promise<PlayerSessionsResult> => {
   const endpoints = [
+    `/sessions?filter[players]=${encodeURIComponent(playerId)}&include=server&page[size]=${SESSION_PAGE_SIZE}&sort=-start`,
     `/sessions?filter[player]=${encodeURIComponent(playerId)}&include=server&page[size]=${SESSION_PAGE_SIZE}&sort=-start`,
-    `/players/${encodeURIComponent(playerId)}/relationships/sessions?include=server&page[size]=${SESSION_PAGE_SIZE}&sort=-start`,
+    `/players/${encodeURIComponent(playerId)}/relationships/sessions?include=server&page[size]=${SESSION_PAGE_SIZE}`,
   ];
 
   let lastError: unknown;
@@ -111,18 +126,23 @@ const fetchPlayerSessions = async (playerId: string): Promise<BattleMetricsEntit
   for (const initialUrl of endpoints) {
     try {
       const collected: BattleMetricsEntity[] = [];
+      const serverNameMap = new Map<string, string>();
       let pageCount = 0;
       let nextUrl: string | null = initialUrl;
 
       while (nextUrl && pageCount < MAX_SESSION_PAGES) {
         const response = await getSessionsPage(nextUrl);
         collected.push(...response.data);
+        mergeServerNames(serverNameMap, response.included);
 
         nextUrl = response.links?.next ?? null;
         pageCount += 1;
       }
 
-      return collected;
+      return {
+        sessions: collected,
+        serverNameMap,
+      };
     } catch (error) {
       lastError = error;
     }
@@ -150,6 +170,10 @@ const summarizeSessions = (
     }
 
     const serverId = getServerIdFromSession(session);
+    if (!serverId || serverId === 'unknown') {
+      continue;
+    }
+
     const serverName = serverNameMap.get(serverId) ?? `Server ${serverId}`;
 
     const current = totalsByServer.get(serverId) ?? {
@@ -176,6 +200,59 @@ const summarizeSessions = (
   };
 };
 
+const getUniqueServerIdsFromSessions = (sessions: BattleMetricsEntity[]): string[] => {
+  const ids = new Set<string>();
+
+  for (const session of sessions) {
+    const serverId = getServerIdFromSession(session);
+    if (serverId && serverId !== 'unknown') {
+      ids.add(serverId);
+    }
+  }
+
+  return [...ids];
+};
+
+const fetchPlayerServerInfo = async (
+  playerId: string,
+  serverId: string,
+  serverNameMap: Map<string, string>,
+): Promise<PlayerServerInfo | null> => {
+  try {
+    const response = await battleMetricsGet<BattleMetricsApiSingleResponse<BattleMetricsEntity>>(
+      `/players/${encodeURIComponent(playerId)}/servers/${encodeURIComponent(serverId)}`,
+    );
+
+    const data = response.data;
+    const attributes = data.attributes ?? {};
+    const timePlayedRaw = attributes.timePlayed;
+    const timePlayed = typeof timePlayedRaw === 'number'
+      ? timePlayedRaw
+      : typeof timePlayedRaw === 'string'
+      ? Number(timePlayedRaw)
+      : 0;
+
+    return {
+      serverId,
+      serverName: serverNameMap.get(serverId) ?? `Server ${serverId}`,
+      firstSeen: typeof attributes.firstSeen === 'string' ? attributes.firstSeen : undefined,
+      lastSeen: typeof attributes.lastSeen === 'string' ? attributes.lastSeen : undefined,
+      timePlayed: Number.isNaN(timePlayed) ? 0 : timePlayed,
+      online: typeof attributes.online === 'boolean' ? attributes.online : undefined,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const summarizeServerPlayInfo = (serverDetails: PlayerServerInfo[]) => {
+  const totalTimePlayed = serverDetails.reduce((sum, server) => sum + server.timePlayed, 0);
+  return {
+    totalTimePlayed,
+    totalTimePlayedHours: Number((totalTimePlayed / 60).toFixed(2)),
+  };
+};
+
 export const getPlayerSessionSummary = async (query: string): Promise<PlayerSessionSummary> => {
   const sanitized = query.trim();
   if (!sanitized) {
@@ -190,14 +267,20 @@ export const getPlayerSessionSummary = async (query: string): Promise<PlayerSess
   const playerId = player.id;
   const playerName = getPlayerName(player);
 
-  const firstPage = await getSessionsPage(
-    `/sessions?filter[player]=${encodeURIComponent(playerId)}&include=server&page[size]=${SESSION_PAGE_SIZE}&sort=-start`,
-  ).catch(() => null);
+  const sessionResult = await fetchPlayerSessions(playerId);
+  const summary = summarizeSessions(sessionResult.sessions, sessionResult.serverNameMap);
 
-  const sessions = firstPage?.data?.length ? await fetchPlayerSessions(playerId) : await fetchPlayerSessions(playerId);
-  const serverNameMap = extractServerNameMap(firstPage?.included);
+  const serverIds = getUniqueServerIdsFromSessions(sessionResult.sessions);
+  const serverDetails: PlayerServerInfo[] = [];
 
-  const summary = summarizeSessions(sessions, serverNameMap);
+  for (const serverId of serverIds) {
+    const info = await fetchPlayerServerInfo(playerId, serverId, sessionResult.serverNameMap);
+    if (info) {
+      serverDetails.push(info);
+    }
+  }
+
+  const playInfo = summarizeServerPlayInfo(serverDetails);
 
   return {
     playerId,
@@ -206,5 +289,8 @@ export const getPlayerSessionSummary = async (query: string): Promise<PlayerSess
     totalHours: Number((summary.totalMinutes / 60).toFixed(2)),
     totalSessions: summary.totalSessions,
     servers: summary.servers,
+    serverDetails,
+    totalTimePlayed: playInfo.totalTimePlayed,
+    totalTimePlayedHours: playInfo.totalTimePlayedHours,
   };
 };
