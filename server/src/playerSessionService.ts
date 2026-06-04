@@ -10,7 +10,7 @@ import {
 
 const MAX_SESSION_PAGES = 20;
 const SESSION_PAGE_SIZE = 100;
-const TEN_DIGITS_REGEX = /^\d{10}$/;
+const ALL_DIGITS_REGEX = /^\d+$/;
 
 const getPlayerName = (player: BattleMetricsEntity): string => {
   const candidate = player.attributes?.name;
@@ -70,14 +70,14 @@ const getServerIdFromSession = (session: BattleMetricsEntity): string => {
 };
 
 const getFirstPlayerFromSearch = async (query: string): Promise<BattleMetricsEntity | null> => {
-  if (TEN_DIGITS_REGEX.test(query)) {
+  if (ALL_DIGITS_REGEX.test(query)) {
     try {
       const playerById = await battleMetricsGet<BattleMetricsApiSingleResponse<BattleMetricsEntity>>(
         `/players/${encodeURIComponent(query)}`,
       );
       return playerById.data;
     } catch {
-      // Fall back to text search when a 10-digit query is not a direct player id.
+      // Fall back to text search when a numeric query is not a direct player id.
     }
   }
 
