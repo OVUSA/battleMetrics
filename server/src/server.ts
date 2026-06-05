@@ -21,21 +21,11 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/players', playerRouter);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const staticAppPath = path.join(__dirname, '../../client/dist');
-
-app.use(express.static(staticAppPath));
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(staticAppPath, 'index.html'));
-});
-
 app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = error instanceof Error ? error.message : 'Unexpected server error.';
   res.status(500).json({ error: message });
 });
 
 app.listen(config.port, () => {
-  // Keep startup log concise for production-like local runs.
   console.log(`Metrics API running on http://localhost:${config.port}`);
 });
