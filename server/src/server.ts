@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Request, Response } from 'express';
 
 import { config } from './config.js';
 import { playerRouter } from './playerRoutes.js';
@@ -15,7 +16,7 @@ app.use(
 );
 app.use(express.json());
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ ok: true });
 });
 

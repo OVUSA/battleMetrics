@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { getPlayerSessionSummary } from './playerSessionService.js';
 
 export const playerRouter = Router();
 
-playerRouter.get('/sessions', async (req, res) => {
+playerRouter.get('/sessions', async (req: Request, res: Response) => {
   const query = typeof req.query.query === 'string' ? req.query.query : '';
 
   if (!query.trim()) {
