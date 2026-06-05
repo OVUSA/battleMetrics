@@ -1,7 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getPlayerSessionSummary = void 0;
 // import fs from 'node:fs/promises';
 // import path from 'node:path';
 // import { fileURLToPath } from 'node:url';
-import { battleMetricsGet } from './battleMetricsClient.js';
+const battleMetricsClient_js_1 = require("./battleMetricsClient.js");
 const MAX_SESSION_PAGES = 20;
 const SESSION_PAGE_SIZE = 100;
 const ALL_DIGITS_REGEX = /^\d+$/;
@@ -60,14 +63,14 @@ const getServerIdFromSession = (session) => {
 const getFirstPlayerFromSearch = async (query) => {
     if (ALL_DIGITS_REGEX.test(query)) {
         try {
-            const playerById = await battleMetricsGet(`/players/${encodeURIComponent(query)}`);
+            const playerById = await (0, battleMetricsClient_js_1.battleMetricsGet)(`/players/${encodeURIComponent(query)}`);
             return playerById.data;
         }
         catch {
             // Fall back to text search when a numeric query is not a direct player id.
         }
     }
-    const list = await battleMetricsGet(`/players?filter[search]=${encodeURIComponent(query)}&page[size]=10`);
+    const list = await (0, battleMetricsClient_js_1.battleMetricsGet)(`/players?filter[search]=${encodeURIComponent(query)}&page[size]=10`);
     if (!list.data.length) {
         return null;
     }
@@ -77,7 +80,7 @@ const getFirstPlayerFromSearch = async (query) => {
         list.data[0]);
 };
 const getSessionsPage = async (url) => {
-    return battleMetricsGet(url);
+    return (0, battleMetricsClient_js_1.battleMetricsGet)(url);
 };
 const mergeServerNames = (target, included) => {
     for (const [id, name] of extractServerNameMap(included)) {
@@ -169,7 +172,7 @@ const getUniqueServerIdsFromSessions = (sessions) => {
 };
 const fetchPlayerServerInfo = async (playerId, serverId, serverNameMap) => {
     try {
-        const response = await battleMetricsGet(`/players/${encodeURIComponent(playerId)}/servers/${encodeURIComponent(serverId)}`);
+        const response = await (0, battleMetricsClient_js_1.battleMetricsGet)(`/players/${encodeURIComponent(playerId)}/servers/${encodeURIComponent(serverId)}`);
         // await saveRawResponse(
         //   `player-${playerId}-server-${serverId}.json`,
         //   response,
@@ -202,7 +205,7 @@ const summarizeServerPlayInfo = (serverDetails) => {
         totalTimePlayedHours: Number((totalTimePlayed / 60).toFixed(2)),
     };
 };
-export const getPlayerSessionSummary = async (query) => {
+const getPlayerSessionSummary = async (query) => {
     const sanitized = query.trim();
     if (!sanitized) {
         throw new Error('Search query is required.');
@@ -236,3 +239,4 @@ export const getPlayerSessionSummary = async (query) => {
         totalTimePlayedHours: playInfo.totalTimePlayedHours,
     };
 };
+exports.getPlayerSessionSummary = getPlayerSessionSummary;

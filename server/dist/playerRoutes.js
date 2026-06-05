@@ -1,14 +1,17 @@
-import { Router } from 'express';
-import { getPlayerSessionSummary } from './playerSessionService.js';
-export const playerRouter = Router();
-playerRouter.get('/sessions', async (req, res) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.playerRouter = void 0;
+const express_1 = require("express");
+const playerSessionService_js_1 = require("./playerSessionService.js");
+exports.playerRouter = (0, express_1.Router)();
+exports.playerRouter.get('/sessions', async (req, res) => {
     const query = typeof req.query.query === 'string' ? req.query.query : '';
     if (!query.trim()) {
         res.status(400).json({ error: 'Query is required.' });
         return;
     }
     try {
-        const summary = await getPlayerSessionSummary(query);
+        const summary = await (0, playerSessionService_js_1.getPlayerSessionSummary)(query);
         res.json({
             query,
             player: {

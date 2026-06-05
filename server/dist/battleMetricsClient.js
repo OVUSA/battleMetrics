@@ -1,22 +1,25 @@
-import { config } from './config.js';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.battleMetricsGet = void 0;
+const config_js_1 = require("./config.js");
 const buildHeaders = () => {
-    if (!config.battleMetricsApiToken) {
+    if (!config_js_1.config.battleMetricsApiToken) {
         return {
             Accept: 'application/json',
         };
     }
     return {
         Accept: 'application/json',
-        Authorization: `Bearer ${config.battleMetricsApiToken}`,
+        Authorization: `Bearer ${config_js_1.config.battleMetricsApiToken}`,
     };
 };
 const withBaseUrl = (pathOrUrl) => {
     if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
         return pathOrUrl;
     }
-    return `${config.battleMetricsBaseUrl}${pathOrUrl}`;
+    return `${config_js_1.config.battleMetricsBaseUrl}${pathOrUrl}`;
 };
-export const battleMetricsGet = async (pathOrUrl) => {
+const battleMetricsGet = async (pathOrUrl) => {
     const response = await fetch(withBaseUrl(pathOrUrl), {
         method: 'GET',
         headers: buildHeaders(),
@@ -27,3 +30,4 @@ export const battleMetricsGet = async (pathOrUrl) => {
     }
     return (await response.json());
 };
+exports.battleMetricsGet = battleMetricsGet;
