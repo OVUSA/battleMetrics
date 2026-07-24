@@ -239,6 +239,29 @@ const getUniqueServerIdsFromSessions = (sessions: BattleMetricsEntity[]): string
   return [...ids];
 };
 
+export const normalizePlayerServerInfo = (
+  serverId: string,
+  data: BattleMetricsEntity,
+  serverNameMap: Map<string, string>,
+): PlayerServerInfo => {
+  const attributes = data.attributes ?? {};
+  const timePlayedRaw = attributes.timePlayed;
+  const timePlayed = typeof timePlayedRaw === 'number'
+    ? timePlayedRaw
+    : typeof timePlayedRaw === 'string'
+    ? Number(timePlayedRaw)
+    : 0;
+
+  return {
+    serverId,
+    serverName: serverNameMap.get(serverId) ?? `Server ${serverId}`,
+    firstSeen: typeof attributes.firstSeen === 'string' ? attributes.firstSeen : undefined,
+    lastSeen: typeof attributes.lastSeen === 'string' ? attributes.lastSeen : undefined,
+    timePlayed: Number.isNaN(timePlayed) ? 0 : timePlayed,
+    online: typeof attributes.online === 'boolean' ? attributes.online : undefined,
+  };
+};
+
 const fetchPlayerServerInfo = async (
   playerId: string,
   serverId: string,
@@ -254,25 +277,45 @@ const fetchPlayerServerInfo = async (
     //   response,
     // );
 
-    const data = response.data;
-    const attributes = data.attributes ?? {};
-    const timePlayedRaw = attributes.timePlayed;
-    const timePlayed = typeof timePlayedRaw === 'number'
-      ? timePlayedRaw
-      : typeof timePlayedRaw === 'string'
-      ? Number(timePlayedRaw)
-      : 0;
-
-    return {
-      serverId,
-      serverName: serverNameMap.get(serverId) ?? `Server ${serverId}`,
-      firstSeen: typeof attributes.firstSeen === 'string' ? attributes.firstSeen : undefined,
-      lastSeen: typeof attributes.lastSeen === 'string' ? attributes.lastSeen : undefined,
-      timePlayed: Number.isNaN(timePlayed) ? 0 : timePlayed,
-      online: typeof attributes.online === 'boolean' ? attributes.online : undefined,
-    };
+    return normalizePlayerServerInfo(serverId, response.data, serverNameMap);
   } catch {
     return null;
+  }
+};
+
+const fetchPlayerServerInfos = async (
+  playerId: string,
+  serverIds: string[],
+  serverNameMap: Map<string, string>,
+): Promise<PlayerServerInfo[]> => {
+  if (!serverIds.length) {
+    return [];
+  }
+
+  try {
+    const response = await battleMetricsGet<BattleMetricsApiListResponse<BattleMetricsEntity>>(
+      `/players/${encodeURIComponent(playerId)}/servers?include=server&page[size]=100`,
+    );
+
+    const bulkResults = response.data.map((entry) => normalizePlayerServerInfo(entry.id, entry, serverNameMap));
+    const fetchedIds = new Set(bulkResults.map((server) => server.serverId));
+    const missingIds = serverIds.filter((serverId) => !fetchedIds.has(serverId));
+
+    if (!missingIds.length) {
+      return bulkResults;
+    }
+
+    const fallbackResults = await Promise.all(
+      missingIds.map((serverId) => fetchPlayerServerInfo(playerId, serverId, serverNameMap)),
+    );
+
+    return [...bulkResults, ...fallbackResults.filter((info): info is PlayerServerInfo => info !== null)];
+  } catch {
+    const fallbackResults = await Promise.all(
+      serverIds.map((serverId) => fetchPlayerServerInfo(playerId, serverId, serverNameMap)),
+    );
+
+    return fallbackResults.filter((info): info is PlayerServerInfo => info !== null);
   }
 };
 
@@ -302,14 +345,7 @@ export const getPlayerSessionSummary = async (query: string): Promise<PlayerSess
   const summary = summarizeSessions(sessionResult.sessions, sessionResult.serverNameMap);
 
   const serverIds = getUniqueServerIdsFromSessions(sessionResult.sessions);
-  const serverDetails: PlayerServerInfo[] = [];
-
-  for (const serverId of serverIds) {
-    const info = await fetchPlayerServerInfo(playerId, serverId, sessionResult.serverNameMap);
-    if (info) {
-      serverDetails.push(info);
-    }
-  }
+  const serverDetails = await fetchPlayerServerInfos(playerId, serverIds, sessionResult.serverNameMap);
 
   const playInfo = summarizeServerPlayInfo(serverDetails);
 

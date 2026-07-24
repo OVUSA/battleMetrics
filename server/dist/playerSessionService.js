@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPlayerSessionSummary = void 0;
+exports.getPlayerSessionSummary = exports.normalizePlayerServerInfo = void 0;
 // import fs from 'node:fs/promises';
 // import path from 'node:path';
 // import { fileURLToPath } from 'node:url';
@@ -170,6 +170,24 @@ const getUniqueServerIdsFromSessions = (sessions) => {
     }
     return [...ids];
 };
+const normalizePlayerServerInfo = (serverId, data, serverNameMap) => {
+    const attributes = data.attributes ?? {};
+    const timePlayedRaw = attributes.timePlayed;
+    const timePlayed = typeof timePlayedRaw === 'number'
+        ? timePlayedRaw
+        : typeof timePlayedRaw === 'string'
+            ? Number(timePlayedRaw)
+            : 0;
+    return {
+        serverId,
+        serverName: serverNameMap.get(serverId) ?? `Server ${serverId}`,
+        firstSeen: typeof attributes.firstSeen === 'string' ? attributes.firstSeen : undefined,
+        lastSeen: typeof attributes.lastSeen === 'string' ? attributes.lastSeen : undefined,
+        timePlayed: Number.isNaN(timePlayed) ? 0 : timePlayed,
+        online: typeof attributes.online === 'boolean' ? attributes.online : undefined,
+    };
+};
+exports.normalizePlayerServerInfo = normalizePlayerServerInfo;
 const fetchPlayerServerInfo = async (playerId, serverId, serverNameMap) => {
     try {
         const response = await (0, battleMetricsClient_js_1.battleMetricsGet)(`/players/${encodeURIComponent(playerId)}/servers/${encodeURIComponent(serverId)}`);
@@ -177,25 +195,30 @@ const fetchPlayerServerInfo = async (playerId, serverId, serverNameMap) => {
         //   `player-${playerId}-server-${serverId}.json`,
         //   response,
         // );
-        const data = response.data;
-        const attributes = data.attributes ?? {};
-        const timePlayedRaw = attributes.timePlayed;
-        const timePlayed = typeof timePlayedRaw === 'number'
-            ? timePlayedRaw
-            : typeof timePlayedRaw === 'string'
-                ? Number(timePlayedRaw)
-                : 0;
-        return {
-            serverId,
-            serverName: serverNameMap.get(serverId) ?? `Server ${serverId}`,
-            firstSeen: typeof attributes.firstSeen === 'string' ? attributes.firstSeen : undefined,
-            lastSeen: typeof attributes.lastSeen === 'string' ? attributes.lastSeen : undefined,
-            timePlayed: Number.isNaN(timePlayed) ? 0 : timePlayed,
-            online: typeof attributes.online === 'boolean' ? attributes.online : undefined,
-        };
+        return (0, exports.normalizePlayerServerInfo)(serverId, response.data, serverNameMap);
     }
     catch {
         return null;
+    }
+};
+const fetchPlayerServerInfos = async (playerId, serverIds, serverNameMap) => {
+    if (!serverIds.length) {
+        return [];
+    }
+    try {
+        const response = await (0, battleMetricsClient_js_1.battleMetricsGet)(`/players/${encodeURIComponent(playerId)}/servers?include=server&page[size]=100`);
+        const bulkResults = response.data.map((entry) => (0, exports.normalizePlayerServerInfo)(entry.id, entry, serverNameMap));
+        const fetchedIds = new Set(bulkResults.map((server) => server.serverId));
+        const missingIds = serverIds.filter((serverId) => !fetchedIds.has(serverId));
+        if (!missingIds.length) {
+            return bulkResults;
+        }
+        const fallbackResults = await Promise.all(missingIds.map((serverId) => fetchPlayerServerInfo(playerId, serverId, serverNameMap)));
+        return [...bulkResults, ...fallbackResults.filter((info) => info !== null)];
+    }
+    catch {
+        const fallbackResults = await Promise.all(serverIds.map((serverId) => fetchPlayerServerInfo(playerId, serverId, serverNameMap)));
+        return fallbackResults.filter((info) => info !== null);
     }
 };
 const summarizeServerPlayInfo = (serverDetails) => {
@@ -219,13 +242,7 @@ const getPlayerSessionSummary = async (query) => {
     const sessionResult = await fetchPlayerSessions(playerId);
     const summary = summarizeSessions(sessionResult.sessions, sessionResult.serverNameMap);
     const serverIds = getUniqueServerIdsFromSessions(sessionResult.sessions);
-    const serverDetails = [];
-    for (const serverId of serverIds) {
-        const info = await fetchPlayerServerInfo(playerId, serverId, sessionResult.serverNameMap);
-        if (info) {
-            serverDetails.push(info);
-        }
-    }
+    const serverDetails = await fetchPlayerServerInfos(playerId, serverIds, sessionResult.serverNameMap);
     const playInfo = summarizeServerPlayInfo(serverDetails);
     return {
         playerId,
