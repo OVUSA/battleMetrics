@@ -4,14 +4,21 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Request, Response } from 'express';
 
-import { config } from './config.js';
+import { config, isAllowedOrigin } from './config.js';
 import { playerRouter } from './playerRoutes.js';
 
 const app = express();
 
 app.use(
   cors({
-    origin: config.corsOrigin,
+    origin: (origin, callback) => {
+      if (!origin || isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, false);
+    },
     credentials: true,
   }),
 );

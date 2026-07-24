@@ -9,7 +9,14 @@ const config_js_1 = require("./config.js");
 const playerRoutes_js_1 = require("./playerRoutes.js");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
-    origin: config_js_1.config.corsOrigin,
+    origin: (origin, callback) => {
+        if (!origin || (0, config_js_1.isAllowedOrigin)(origin)) {
+            callback(null, true);
+            return;
+        }
+        callback(null, false);
+    },
+    credentials: true,
 }));
 app.use(express_1.default.json());
 app.get('/api/health', (_req, res) => {
